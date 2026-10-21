@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 安全：不加载任何外部资源，也不能联网（connect-src 'none'）；保险库只在这台设备的浏览器里解密 -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' blob: data:; manifest-src 'self'; worker-src 'self'; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#2c3e50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BiuPass">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+<title>BiuPass 网页版</title>
+</head>
+<body>
+<header class="bar">
+  <div class="brand">🛡 BiuPass <span class="tag">网页版 · 只读</span></div>
+  <div class="bar-actions">
+    <button id="btn-settings" class="ghost hidden" title="设置">⚙</button>
+    <button id="btn-lock" class="ghost hidden">🔒 锁定</button>
+  </div>
+</header>
+
+<div id="update-bar" class="update-bar hidden">
+  <span id="update-text"></span>
+  <button id="btn-update" class="primary">更新</button>
+  <button id="btn-update-later" class="ghost">以后</button>
+</div>
+
+<main>
+  <!-- 解锁 -->
+  <section id="view-unlock" class="view">
+    <div class="card narrow">
+      <h1>打开保险库</h1>
+      <p class="muted">保险库文件在这台设备上解密，任何内容都不会上传（这个页面根本没有联网的权限）。</p>
+
+      <div id="file-box">
+        <label class="file-btn">
+          📂 选择保险库文件
+          <input id="file-input" type="file" accept=".json,.zip,application/json,application/zip">
+        </label>
+        <p class="muted small">电脑上「设置 → 导出加密备份」得到的 .zip / .json，或数据文件夹里的 vault.json。</p>
+        <div id="file-info" class="file-info hidden"></div>
+        <label class="check"><input id="remember-file" type="checkbox" checked> 在这台设备上记住这个文件（文件本身是加密的）</label>
+      </div>
+
+      <div id="passkey-box" class="hidden">
+        <button id="btn-passkey" class="primary big">🙂 用 Face ID / 指纹解锁</button>
+        <p class="muted small center">或者用恢复密钥：</p>
+      </div>
+
+      <label for="recovery">恢复密钥</label>
+      <input id="recovery" class="mono" autocomplete="off" autocapitalize="characters" spellcheck="false"
+             placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX">
+      <button id="btn-unlock" class="primary big">解锁</button>
+      <p id="unlock-msg" class="msg"></p>
+    </div>
+  </section>
+
+  <!-- 列表 -->
+  <section id="view-list" class="view hidden">
+    <div class="ro-banner">只读：网页版只能查看和复制。修改请在电脑上进行，之后重新导出备份。</div>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="🔍 搜索名称、账号、备注…" autocomplete="off">
+    </div>
+    <div id="chips" class="chips"></div>
+    <ul id="list" class="list"></ul>
+    <p id="list-count" class="muted small center"></p>
+  </section>
+
+  <!-- 详情 -->
+  <section id="view-detail" class="view hidden">
+    <button id="btn-back" class="ghost">← 返回</button>
+    <div id="detail" class="card"></div>
+  </section>
+
+  <!-- 设置 -->
+  <section id="view-settings" class="view hidden">
+    <button id="btn-settings-back" class="ghost">← 返回</button>
+    <div class="card">
+      <h2>Face ID / 指纹快速解锁</h2>
+      <p class="muted small">在这台设备上登记一个 passkey。以后打开网页用 Face ID / 指纹就能解锁，不用每次输入恢复密钥。
+        需要 iOS 18 / Android / Chrome 116 以上。只对这台设备上的这个浏览器有效。</p>
+      <p id="passkey-state" class="small"></p>
+      <button id="btn-enroll" class="primary">登记 Face ID / 指纹</button>
+      <button id="btn-unenroll" class="danger hidden">取消快速解锁</button>
+      <p id="enroll-msg" class="msg"></p>
+    </div>
+    <div class="card">
+      <h2>记住的文件</h2>
+      <p id="stored-info" class="small"></p>
+      <button id="btn-forget" class="danger">从这台设备删除记住的文件和快速解锁</button>
+    </div>
+    <div class="card">
+      <h2>版本与更新</h2>
+      <p class="small">当前网页版本：<b id="web-version"></b></p>
+      <p class="muted small">网页装好后不会自动更新：有新版本时会提示，你点「更新」才会换。</p>
+      <button id="btn-check-update">检查更新</button>
+      <p id="update-msg" class="msg"></p>
+    </div>
+    <div class="card">
+      <h2>安全说明</h2>
+      <ul class="small muted">
+        <li>解密全部在这台设备上完成，页面没有任何联网权限（CSP connect-src 'none'），不能把数据发出去。</li>
+        <li>恢复密钥经 Argon2id（256 MB 内存）计算，和电脑版完全相同，无法暴力破解。</li>
+        <li>5 分钟不操作、或切到别的应用超过 1 分钟，自动锁定并清除内存里的数据。</li>
+        <li>快速解锁：保险库钥匙用 passkey 算出的密钥加密后存在这台设备上；没有你的 Face ID / 指纹就打不开。</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+<script src="vendor/argon2.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

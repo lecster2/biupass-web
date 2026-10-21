@@ -1,0 +1,6 @@
+{
+ "version": "6.0",
+ "notes": "第一版：只读查看、恢复密钥 / Face ID 解锁、验证码、附件。",
+ "files": ["index.html", "app.js", "style.css", "vendor/argon2.umd.min.js", "manifest.webmanifest", "icon.svg",
+           "icon-192.png", "icon-512.png"]
+}
