@@ -1,8 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#2c3e50"/>
-  <path d="M256 92 L392 144 V250 C392 340 330 398 256 424 C182 398 120 340 120 250 V144 Z" fill="#3498db"/>
-  <rect x="196" y="240" width="120" height="96" rx="16" fill="#fff"/>
-  <path d="M220 240 V210 a36 36 0 0 1 72 0 V240" fill="none" stroke="#fff" stroke-width="22"/>
-  <circle cx="256" cy="280" r="13" fill="#2c3e50"/>
-  <rect x="250" y="284" width="12" height="30" rx="5" fill="#2c3e50"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- 图标 C：深色底 + 白色密码框（***）+ 红色小锁（和电脑版一致；设计：biuletao） -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2c3e50"/><stop offset="1" stop-color="#17202a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="225" fill="url(#bg)"/>
+  <rect x="150" y="400" width="724" height="290" rx="90" fill="#fff"/>
+  <g stroke-width="40" stroke-linecap="butt">
+    <g stroke="#3498db" transform="translate(300 545)">
+      <line x1="0" y1="-72" x2="0" y2="72"/><line x1="-62" y1="-36" x2="62" y2="36"/><line x1="-62" y1="36" x2="62" y2="-36"/>
+    </g>
+    <g stroke="#3498db" transform="translate(512 545)">
+      <line x1="0" y1="-72" x2="0" y2="72"/><line x1="-62" y1="-36" x2="62" y2="36"/><line x1="-62" y1="36" x2="62" y2="-36"/>
+    </g>
+    <g stroke="#2ecc71" transform="translate(724 545)">
+      <line x1="0" y1="-72" x2="0" y2="72"/><line x1="-62" y1="-36" x2="62" y2="36"/><line x1="-62" y1="36" x2="62" y2="-36"/>
+    </g>
+  </g>
+  <circle cx="770" cy="280" r="130" fill="#e74c3c"/>
+  <path d="M732 270 V244 a38 38 0 0 1 76 0 V270" fill="none" stroke="#fff" stroke-width="17"/>
+  <rect x="710" y="268" width="120" height="74" rx="14" fill="#fff"/>
+  <circle cx="770" cy="296" r="11" fill="#e74c3c"/>
+  <rect x="765" y="296" width="10" height="24" rx="4" fill="#e74c3c"/>
 </svg>
