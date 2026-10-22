@@ -42,6 +42,9 @@ button:disabled { opacity: .5; }
 .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
 .chips button { white-space: nowrap; font-size: 14px; padding: 6px 12px; border-radius: 16px; }
 .chips button.on { background: var(--blue); color: #fff; }
+.chips.tags button { font-size: 13px; padding: 4px 10px; }
+.tagline { display: flex; flex-wrap: wrap; gap: 6px; margin: -6px 0 12px; }
+.tagline button { font-size: 13px; padding: 3px 10px; border-radius: 12px; background: rgba(52,152,219,.13); color: var(--blue); }
 .list { list-style: none; margin: 6px 0; padding: 0; }
 .list li { background: var(--card); border-radius: 12px; padding: 12px 14px; margin: 7px 0; cursor: pointer;
   display: flex; gap: 12px; align-items: center; }

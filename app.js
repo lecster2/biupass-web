@@ -29,6 +29,7 @@ let blobs = null;          // zip 里的加密附件 {文件名: Uint8Array}
 let vaultKey = null;       // 解锁后才有：32 字节
 let entries = [];
 let filter = 'all';
+let tagFilter = null;      // 只看某个标签（v6.5）
 let current = null;        // 正在查看的记录
 let timers = [];
 let lastActive = Date.now();
@@ -205,6 +206,7 @@ async function openPayload(key) {
   plain.fill(0);
   lastActive = Date.now();
   filter = 'all';
+  tagFilter = null;
   $('search').value = '';
   renderChips();
   renderList();
@@ -391,6 +393,18 @@ function renderChips() {
     const label = k === 'all' ? `全部 ${entries.length}` : `${TYPES[k][0]} ${TYPES[k][1]} ${counts[k]}`;
     box.append(el('button', { class: k === filter ? 'on' : '', text: label, onclick: () => { filter = k; renderChips(); renderList(); } }));
   }
+  // 标签（电脑版里贴的，如「游戏」「银行」）：有标签时才显示这一行
+  const tagCounts = {};
+  for (const e of entries) for (const t of e.tags || []) tagCounts[t] = (tagCounts[t] || 0) + 1;
+  const names = Object.keys(tagCounts).sort((a, b) => a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0);
+  if (tagFilter && !tagCounts[tagFilter]) tagFilter = null;
+  const tbox = $('tagchips');
+  tbox.replaceChildren();
+  tbox.classList.toggle('hidden', !names.length);
+  for (const t of [null, ...names]) {
+    const label = t === null ? '🏷 全部标签' : `${t} ${tagCounts[t]}`;
+    tbox.append(el('button', { class: t === tagFilter ? 'on' : '', text: label, onclick: () => { tagFilter = t; renderChips(); renderList(); } }));
+  }
 }
 
 function renderList() {
@@ -399,16 +413,18 @@ function renderList() {
   list.replaceChildren();
   const shown = entries.filter((e) => {
     if (filter !== 'all' && kindOf(e) !== filter) return false;
+    if (tagFilter && !(e.tags || []).includes(tagFilter)) return false;
     if (!q) return true;
     const hay = ['title', 'username', 'url', 'note', 'content', 'bank', 'holder'].map((k) => e[k] || '').join(' ')
-      + ' ' + cleanCard(e.number).slice(-4);
+      + ' ' + cleanCard(e.number).slice(-4) + ' ' + (e.tags || []).join(' ');
     return hay.toLowerCase().includes(q);
   }).sort((a, b) => (b.created || 0) - (a.created || 0));
   for (const e of shown) {
     const k = kindOf(e);
     list.append(el('li', { onclick: () => openDetail(e) },
       el('div', { class: 'icon', text: TYPES[k][0] }),
-      el('div', { class: 'main' }, el('div', { class: 't', text: titleOf(e) }), el('div', { class: 's', text: subtitleOf(e) }))));
+      el('div', { class: 'main' }, el('div', { class: 't', text: titleOf(e) }),
+        el('div', { class: 's', text: [subtitleOf(e), (e.tags || []).map((t) => '🏷' + t).join(' ')].filter(Boolean).join(' · ') }))));
   }
   $('list-count').textContent = `共 ${shown.length} 条`;
 }
@@ -447,6 +463,10 @@ function openDetail(e) {
   box.replaceChildren();
   const k = kindOf(e);
   box.append(el('div', { class: 'kind', text: TYPES[k].join(' ') }), el('div', { class: 'title', text: titleOf(e) }));
+  if ((e.tags || []).length) {  // 点标签：回到列表，只看这个标签
+    box.append(el('div', { class: 'tagline' }, ...e.tags.map((t) => el('button', {
+      text: '🏷 ' + t, onclick: () => { tagFilter = t; renderChips(); renderList(); $('btn-back').click(); } }))));
+  }
   if (k === 'unknown') {
     box.append(el('p', { class: 'muted', text: '这条记录来自更新版本的软件，网页版还不能显示它的内容。' }));
   }
@@ -617,7 +637,7 @@ $('btn-forget').addEventListener('click', async () => {
 
 // ------------------------------------------------------------ 版本与更新：装好后不自动更新，有新版本只提示
 
-const WEB_VERSION = '6.4';
+const WEB_VERSION = '6.5';
 const newer = (a, b) => {
   const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {

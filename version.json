@@ -1,6 +1,6 @@
 {
- "version": "6.4",
- "notes": "换了新图标（和电脑版一致）。",
+ "version": "6.5",
+ "notes": "显示电脑版里贴的标签，可以按标签筛选、搜索。",
  "files": [
   "index.html",
   "app.js",
