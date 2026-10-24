@@ -1,6 +1,6 @@
 {
- "version": "6.9",
- "notes": "显示账号的找回邮箱、绑定手机号（也能搜索）。",
+ "version": "7.7",
+ "notes": "软件改名为「Biuletao 密码管家」（数据、passkey 都不变）。",
  "files": [
   "index.html",
   "app.js",

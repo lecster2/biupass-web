@@ -666,7 +666,7 @@ $('btn-forget').addEventListener('click', async () => {
 
 // ------------------------------------------------------------ 版本与更新：装好后不自动更新，有新版本只提示
 
-const WEB_VERSION = '6.9';
+const WEB_VERSION = '7.7';
 const newer = (a, b) => {
   const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {

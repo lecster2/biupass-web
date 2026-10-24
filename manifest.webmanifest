@@ -1,6 +1,6 @@
 {
-  "name": "BiuPass 网页版（只读）",
-  "short_name": "BiuPass",
+  "name": "Biuletao 密码管家 · 网页版（只读）",
+  "short_name": "Biuletao 密码管家",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
