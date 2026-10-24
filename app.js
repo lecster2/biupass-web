@@ -436,7 +436,8 @@ function renderList() {
     if (filter !== 'all' && kindOf(e) !== filter) return false;
     if (tagFilter && !(e.tags || []).includes(tagFilter)) return false;
     if (!q) return true;
-    const hay = ['title', 'username', 'url', 'note', 'content', 'bank', 'holder'].map((k) => e[k] || '').join(' ')
+    const hay = ['title', 'username', 'url', 'note', 'content', 'bank', 'holder', 'recovery_email', 'phone']
+      .map((k) => e[k] || '').join(' ')
       + ' ' + cleanCard(e.number).slice(-4) + ' ' + (e.tags || []).join(' ')
       + ' ' + customFields(e).map((f) => f.name + ' ' + (f.secret ? '' : f.value)).join(' ');  // 保密的值不参与搜索
     return hay.toLowerCase().includes(q);
@@ -496,12 +497,16 @@ function openDetail(e) {
     field(box, '账号', e.username);
     field(box, '密码', e.password, { secret: true, mono: true });
     field(box, '网址', e.url);
+    field(box, '找回邮箱', e.recovery_email);
+    field(box, '绑定手机号', e.phone);
   } else if (e.type === 'codes') {
     renderCodes(box, e.codes || []);
   } else if (e.type === 'totp') {
     renderTotp(box, e.totp || {});
     field(box, '账号', e.username);
     field(box, '恢复码（如 Steam 的 R 码）', e.recovery, { secret: true, mono: true });
+    field(box, '找回邮箱', e.recovery_email);
+    field(box, '绑定手机号', e.phone);
   } else if (e.type === 'note') {
     field(box, '内容', e.content);
   } else if (e.type === 'card') {
@@ -661,7 +666,7 @@ $('btn-forget').addEventListener('click', async () => {
 
 // ------------------------------------------------------------ 版本与更新：装好后不自动更新，有新版本只提示
 
-const WEB_VERSION = '6.8';
+const WEB_VERSION = '6.9';
 const newer = (a, b) => {
   const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
