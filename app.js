@@ -13,6 +13,27 @@ const TYPES = {
   totp: ['⏱', '验证器'], note: ['📝', '安全笔记'], card: ['💳', '银行卡'], unknown: ['❔', '新版本的类型'],
 };
 const KNOWN = new Set(['password', 'codes', 'totp', 'note', 'card']);
+// v6.8 模板（电脑版新建时选的）：[图标, 名字, 到期日叫什么]
+const TEMPLATES = {
+  id_card: ['🪪', '身份证', '有效期至'], passport: ['🛂', '护照', '有效期至'], driver: ['🚗', '驾照', '有效期至'],
+  wifi: ['📶', 'Wi-Fi', '到期日'], license: ['🔑', '软件激活码', '到期日'], membership: ['🎫', '会员卡', '到期日'],
+};
+const iconOf = (e) => (TEMPLATES[e.template] || TYPES[kindOf(e)])[0];
+const kindText = (e) => (TEMPLATES[e.template] ? TEMPLATES[e.template].slice(0, 2) : TYPES[kindOf(e)]).join(' ');
+
+// v6.8 自定义字段：记录上的 "cf:xxxx" = {name, value, secret, at}，按添加先后排
+function customFields(e) {
+  return Object.entries(e).filter(([k, v]) => k.startsWith('cf:') && v && typeof v === 'object')
+    .sort((a, b) => (a[1].at || 0) - (b[1].at || 0) || (a[0] < b[0] ? -1 : 1)).map(([, v]) => v);
+}
+
+function expiryText(iso) {
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d)) return iso;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const left = Math.round((d - today) / 86400000);
+  return left < 0 ? `${iso}（已过期 ${-left} 天）` : left === 0 ? `${iso}（今天到期）` : `${iso}（还有 ${left} 天）`;
+}
 
 const $ = (id) => document.getElementById(id);
 const enc = new TextEncoder();
@@ -416,13 +437,14 @@ function renderList() {
     if (tagFilter && !(e.tags || []).includes(tagFilter)) return false;
     if (!q) return true;
     const hay = ['title', 'username', 'url', 'note', 'content', 'bank', 'holder'].map((k) => e[k] || '').join(' ')
-      + ' ' + cleanCard(e.number).slice(-4) + ' ' + (e.tags || []).join(' ');
+      + ' ' + cleanCard(e.number).slice(-4) + ' ' + (e.tags || []).join(' ')
+      + ' ' + customFields(e).map((f) => f.name + ' ' + (f.secret ? '' : f.value)).join(' ');  // 保密的值不参与搜索
     return hay.toLowerCase().includes(q);
   }).sort((a, b) => (b.created || 0) - (a.created || 0));
   for (const e of shown) {
     const k = kindOf(e);
     list.append(el('li', { onclick: () => openDetail(e) },
-      el('div', { class: 'icon', text: TYPES[k][0] }),
+      el('div', { class: 'icon', text: iconOf(e) }),
       el('div', { class: 'main' }, el('div', { class: 't', text: titleOf(e) }),
         el('div', { class: 's', text: [subtitleOf(e), (e.tags || []).map((t) => '🏷' + t).join(' ')].filter(Boolean).join(' · ') }))));
   }
@@ -462,7 +484,7 @@ function openDetail(e) {
   const box = $('detail');
   box.replaceChildren();
   const k = kindOf(e);
-  box.append(el('div', { class: 'kind', text: TYPES[k].join(' ') }), el('div', { class: 'title', text: titleOf(e) }));
+  box.append(el('div', { class: 'kind', text: kindText(e) }), el('div', { class: 'title', text: titleOf(e) }));
   if ((e.tags || []).length) {  // 点标签：回到列表，只看这个标签
     box.append(el('div', { class: 'tagline' }, ...e.tags.map((t) => el('button', {
       text: '🏷 ' + t, onclick: () => { tagFilter = t; renderChips(); renderList(); $('btn-back').click(); } }))));
@@ -490,6 +512,8 @@ function openDetail(e) {
     field(box, 'CVV', e.cvv, { secret: true, mono: true });
     field(box, '银行卡密码', e.pin, { secret: true, mono: true });
   }
+  for (const f of customFields(e)) field(box, f.name || '自定义字段', String(f.value ?? ''), { secret: !!f.secret });
+  if (e.expires) field(box, (TEMPLATES[e.template] || [])[2] || '到期日', e.expires, { display: expiryText(e.expires) });
   field(box, '备注', e.note);
   renderAttachments(box, e.attachments || []);
   box.append(el('p', { class: 'muted small', text: `创建 ${fmtTime(e.created)}　修改 ${fmtTime(e.updated)}` }));
@@ -637,7 +661,7 @@ $('btn-forget').addEventListener('click', async () => {
 
 // ------------------------------------------------------------ 版本与更新：装好后不自动更新，有新版本只提示
 
-const WEB_VERSION = '6.5';
+const WEB_VERSION = '6.8';
 const newer = (a, b) => {
   const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
