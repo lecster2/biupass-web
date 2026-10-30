@@ -65,7 +65,7 @@
   <section id="view-list" class="view hidden">
     <div class="ro-banner">只读：网页版只能查看和复制。修改请在电脑上进行，之后重新导出备份。</div>
     <div class="toolbar">
-      <input id="search" type="search" placeholder="🔍 搜索名称、账号、备注、标签…" autocomplete="off">
+      <input id="search" type="search" placeholder="🔍 搜索：名称、拼音首字母（zfb）、邮箱 / 游戏 / 银行…" autocomplete="off">
     </div>
     <div id="chips" class="chips"></div>
     <div id="tagchips" class="chips tags hidden"></div>
@@ -117,6 +117,8 @@
 
 <div id="toast" class="toast hidden"></div>
 <script src="vendor/argon2.umd.min.js"></script>
+<script src="search-data.js"></script>
+<script src="smartsearch.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

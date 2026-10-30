@@ -429,19 +429,21 @@ function renderChips() {
 }
 
 function renderList() {
-  const q = $('search').value.trim().toLowerCase();
+  const q = $('search').value.trim();
   const list = $('list');
   list.replaceChildren();
-  const shown = entries.filter((e) => {
+  let shown = entries.filter((e) => {
     if (filter !== 'all' && kindOf(e) !== filter) return false;
     if (tagFilter && !(e.tags || []).includes(tagFilter)) return false;
-    if (!q) return true;
-    const hay = ['title', 'username', 'url', 'note', 'content', 'bank', 'holder', 'recovery_email', 'phone']
-      .map((k) => e[k] || '').join(' ')
-      + ' ' + cleanCard(e.number).slice(-4) + ' ' + (e.tags || []).join(' ')
-      + ' ' + customFields(e).map((f) => f.name + ' ' + (f.secret ? '' : f.value)).join(' ');  // 保密的值不参与搜索
-    return hay.toLowerCase().includes(q);
+    return true;
   }).sort((a, b) => (b.created || 0) - (a.created || 0));
+  // v8.6 聪明搜索（smartsearch.js）：同义词 / 拼音首字母 / 打错字 / 类型和状态，按对得多准排序
+  const found = SS.search(shown, q);
+  const ways = new Set();
+  if (found) {
+    shown = found.map((x) => x.entry);
+    for (const x of found) for (const w of x.ways) ways.add(w);
+  }
   for (const e of shown) {
     const k = kindOf(e);
     list.append(el('li', { onclick: () => openDetail(e) },
@@ -449,7 +451,8 @@ function renderList() {
       el('div', { class: 'main' }, el('div', { class: 't', text: titleOf(e) }),
         el('div', { class: 's', text: [subtitleOf(e), (e.tags || []).map((t) => '🏷' + t).join(' ')].filter(Boolean).join(' · ') }))));
   }
-  $('list-count').textContent = `共 ${shown.length} 条`;
+  const how = [['synonym', '同义词'], ['pinyin', '拼音'], ['fuzzy', '近似拼写']].filter(([w]) => ways.has(w)).map(([, t]) => t);
+  $('list-count').textContent = `共 ${shown.length} 条` + (how.length ? `（含${how.join(' / ')}）` : '');
 }
 
 // ------------------------------------------------------------ 详情
@@ -666,7 +669,7 @@ $('btn-forget').addEventListener('click', async () => {
 
 // ------------------------------------------------------------ 版本与更新：装好后不自动更新，有新版本只提示
 
-const WEB_VERSION = '7.7';
+const WEB_VERSION = '8.6';
 const newer = (a, b) => {
   const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {

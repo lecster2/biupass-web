@@ -1,9 +1,11 @@
 {
- "version": "7.7",
- "notes": "软件改名为「Biuletao 密码管家」（数据、passkey 都不变）。",
+ "version": "8.6",
+ "notes": "搜索变聪明了：拼音首字母（zfb → 支付宝）、同义词（邮箱、游戏、银行……）、打错一两个字母也能找到，按对得多准排序。",
  "files": [
   "index.html",
   "app.js",
+  "search-data.js",
+  "smartsearch.js",
   "style.css",
   "vendor/argon2.umd.min.js",
   "manifest.webmanifest",
