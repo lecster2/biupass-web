@@ -18,8 +18,41 @@ const TEMPLATES = {
   id_card: ['🪪', '身份证', '有效期至'], passport: ['🛂', '护照', '有效期至'], driver: ['🚗', '驾照', '有效期至'],
   wifi: ['📶', 'Wi-Fi', '到期日'], license: ['🔑', '软件激活码', '到期日'], membership: ['🎫', '会员卡', '到期日'],
 };
-const iconOf = (e) => (TEMPLATES[e.template] || TYPES[kindOf(e)])[0];
-const kindText = (e) => (TEMPLATES[e.template] ? TEMPLATES[e.template].slice(0, 2) : TYPES[kindOf(e)]).join(' ');
+const iconOf = (e) => e.recharge ? '🧾' : (TEMPLATES[e.template] || TYPES[kindOf(e)])[0];
+const kindText = (e) => e.recharge ? '🧾 充值记录' : (TEMPLATES[e.template] ? TEMPLATES[e.template].slice(0, 2) : TYPES[kindOf(e)]).join(' ');
+
+// v8.9 充值记录 / 旧密码（和电脑版 giftcodes.recharge_totals、quicksave.old_passwords 一致）
+const GIFT = SEARCH_DATA.gift;
+const regionName = (rid) => (GIFT.regions[rid] || [rid, rid])[1];
+function valueText(currency, value) {
+  if (!value) return '';
+  const sym = GIFT.symbols[currency];
+  if (sym == null) return (currency ? currency + ' ' : '') + value;
+  return /[A-Za-z]$/.test(sym) && !sym.endsWith('$') ? sym + ' ' + value : sym + value;
+}
+function rechargeTotals(codes) {
+  const amounts = {};
+  let unknown = 0;
+  for (const c of codes) {
+    const v = parseFloat(c.value);
+    if (!c.value || Number.isNaN(v) || !c.currency) unknown++;
+    else amounts[c.currency] = (amounts[c.currency] || 0) + v;
+  }
+  return [amounts, unknown];
+}
+const amountText = (cur, a) => valueText(cur, a.toFixed(2).replace(/\.?0+$/, ''));
+const totalsText = (amounts) => Object.keys(amounts).sort().map((c) => amountText(c, amounts[c])).join(' + ');
+function oldPasswords(e) {
+  const seen = new Set([e.password || '']);
+  const out = [];
+  for (const h of [...(e.history || [])].reverse()) {
+    const pw = (h.fields || {}).password;
+    if (typeof pw !== 'string' || !pw || seen.has(pw)) continue;
+    seen.add(pw);
+    out.push({ at: h.at, password: pw });
+  }
+  return out;
+}
 
 // v6.8 自定义字段：记录上的 "cf:xxxx" = {name, value, secret, at}，按添加先后排
 function customFields(e) {
@@ -391,6 +424,11 @@ function titleOf(e) {
 
 function subtitleOf(e) {
   const k = kindOf(e);
+  if (k === 'codes' && e.recharge) {
+    const c = e.codes || [];
+    const total = totalsText(rechargeTotals(c)[0]);
+    return `${c.length} 张卡` + (total ? ' · ' + total : '');
+  }
   if (k === 'codes') {
     const c = e.codes || [];
     return `${c.filter((x) => !x.used).length} / ${c.length} 个可用`;
@@ -499,9 +537,12 @@ function openDetail(e) {
   if (e.type === 'password') {
     field(box, '账号', e.username);
     field(box, '密码', e.password, { secret: true, mono: true });
+    renderOldPasswords(box, e);
     field(box, '网址', e.url);
     field(box, '找回邮箱', e.recovery_email);
     field(box, '绑定手机号', e.phone);
+  } else if (e.type === 'codes' && e.recharge) {
+    renderRecharge(box, e);
   } else if (e.type === 'codes') {
     renderCodes(box, e.codes || []);
   } else if (e.type === 'totp') {
@@ -526,6 +567,39 @@ function openDetail(e) {
   renderAttachments(box, e.attachments || []);
   box.append(el('p', { class: 'muted small', text: `创建 ${fmtTime(e.created)}　修改 ${fmtTime(e.updated)}` }));
   show('view-detail');
+}
+
+function renderOldPasswords(box, e) {
+  const olds = oldPasswords(e);
+  if (!olds.length) return;
+  const wrap = el('div', { class: 'field' }, el('div', { class: 'k', text: `旧密码（${olds.length}）` }));
+  for (const o of olds) {
+    let open = false;
+    const v = el('div', { class: 'v mono old secret', text: '••••••••' });
+    wrap.append(el('div', { class: 'row' }, v,
+      el('button', { text: '👁', onclick: () => { open = !open; v.textContent = open ? o.password : '••••••••'; v.classList.toggle('secret', !open); } }),
+      el('button', { text: '复制', onclick: () => copy(o.password, '旧密码') })),
+    el('div', { class: 'muted small', text: fmtTime(o.at) + ' 换下' }));
+  }
+  box.append(wrap);
+}
+
+function renderRecharge(box, e) {
+  const codes = e.codes || [];
+  const [amounts, unknown] = rechargeTotals(codes);
+  box.append(el('div', { class: 'field' }, el('div', { class: 'k', text: '充值时间' }),
+    el('div', { class: 'v', text: String(e.recharge.at || '').replace('T', ' ') })));
+  let line = `${codes.length} 张卡` + (Object.keys(amounts).length ? '，合计 ' + totalsText(amounts) : '');
+  if (unknown) line += `（${unknown} 张没有面值）`;
+  const wrap = el('div', { class: 'field' }, el('div', { class: 'k', text: line }));
+  const ul = el('ul', { class: 'codes' });
+  codes.forEach((c, i) => {
+    const info = [c.region ? regionName(c.region) : '', c.value ? valueText(c.currency, c.value) : '没有面值'].filter(Boolean).join(' · ');
+    ul.append(el('li', {}, el('span', { class: 'n', text: String(i + 1) }), el('span', { class: 'c', text: c.code }),
+      el('span', { class: 'u', text: info }), el('button', { text: '复制', onclick: () => copy(c.code, '充值码') })));
+  });
+  wrap.append(ul, el('p', { class: 'muted small', text: '这些卡都已经用过了。汇率换算请在电脑版里看（网页版不联网）。' }));
+  box.append(wrap);
 }
 
 function renderCodes(box, codes) {
@@ -669,7 +743,7 @@ $('btn-forget').addEventListener('click', async () => {
 
 // ------------------------------------------------------------ 版本与更新：装好后不自动更新，有新版本只提示
 
-const WEB_VERSION = '8.6';
+const WEB_VERSION = '8.9';
 const newer = (a, b) => {
   const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
