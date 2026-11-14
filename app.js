@@ -17,9 +17,11 @@ const KNOWN = new Set(['password', 'codes', 'totp', 'note', 'card']);
 const TEMPLATES = {
   id_card: ['🪪', '身份证', '有效期至'], passport: ['🛂', '护照', '有效期至'], driver: ['🚗', '驾照', '有效期至'],
   wifi: ['📶', 'Wi-Fi', '到期日'], license: ['🔑', '软件激活码', '到期日'], membership: ['🎫', '会员卡', '到期日'],
+  api: ['🔌', 'API 密钥 / Token', '到期日'],
 };
-const iconOf = (e) => e.recharge ? '🧾' : (TEMPLATES[e.template] || TYPES[kindOf(e)])[0];
-const kindText = (e) => e.recharge ? '🧾 充值记录' : (TEMPLATES[e.template] ? TEMPLATES[e.template].slice(0, 2) : TYPES[kindOf(e)]).join(' ');
+const giftText = (e) => e.gift ? (e.gift.kind === 'game' ? '🎮 游戏激活码' : '🎁 充值卡') : '';
+const iconOf = (e) => e.recharge ? '🧾' : e.gift ? giftText(e).slice(0, 2) : (TEMPLATES[e.template] || TYPES[kindOf(e)])[0];
+const kindText = (e) => e.recharge ? '🧾 充值记录' : e.gift ? giftText(e) : (TEMPLATES[e.template] ? TEMPLATES[e.template].slice(0, 2) : TYPES[kindOf(e)]).join(' ');
 
 // v8.9 充值记录 / 旧密码（和电脑版 giftcodes.recharge_totals、quicksave.old_passwords 一致）
 const GIFT = SEARCH_DATA.gift;
@@ -589,6 +591,7 @@ function renderRecharge(box, e) {
   const [amounts, unknown] = rechargeTotals(codes);
   box.append(el('div', { class: 'field' }, el('div', { class: 'k', text: '充值时间' }),
     el('div', { class: 'v', text: String(e.recharge.at || '').replace('T', ' ') })));
+  field(box, '充值账号', e.username);
   let line = `${codes.length} 张卡` + (Object.keys(amounts).length ? '，合计 ' + totalsText(amounts) : '');
   if (unknown) line += `（${unknown} 张没有面值）`;
   const wrap = el('div', { class: 'field' }, el('div', { class: 'k', text: line }));
@@ -743,7 +746,7 @@ $('btn-forget').addEventListener('click', async () => {
 
 // ------------------------------------------------------------ 版本与更新：装好后不自动更新，有新版本只提示
 
-const WEB_VERSION = '8.9';
+const WEB_VERSION = '9.1';
 const newer = (a, b) => {
   const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
