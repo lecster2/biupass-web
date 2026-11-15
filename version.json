@@ -1,6 +1,6 @@
 {
- "version": "9.1",
- "notes": "充值卡显示成「🎁 充值卡 / 🎮 游戏激活码」，充值记录显示充值账号；能看「🔌 API 密钥 / Token」模板的记录。",
+ "version": "9.4",
+ "notes": "API 密钥记录显示账号。",
  "files": [
   "index.html",
   "app.js",

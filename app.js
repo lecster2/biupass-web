@@ -554,6 +554,7 @@ function openDetail(e) {
     field(box, '找回邮箱', e.recovery_email);
     field(box, '绑定手机号', e.phone);
   } else if (e.type === 'note') {
+    field(box, '账号', e.username);
     field(box, '内容', e.content);
   } else if (e.type === 'card') {
     field(box, '发卡行', e.bank);
@@ -746,7 +747,7 @@ $('btn-forget').addEventListener('click', async () => {
 
 // ------------------------------------------------------------ 版本与更新：装好后不自动更新，有新版本只提示
 
-const WEB_VERSION = '9.1';
+const WEB_VERSION = '9.4';
 const newer = (a, b) => {
   const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
